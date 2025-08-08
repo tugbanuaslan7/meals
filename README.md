@@ -155,4 +155,22 @@ Kullanıcı bir yemeğin detay ekranında star ikonuna tıklayarak favorilere ek
 ![alt text](images/image-52.png)
 ![alt text](images/image-53.png)
 ![alt text](images/image-54.png)
+
+## Adding a Side Drawer
+MainDrawer widget’ı ile uygulamaya yan menü (Drawer) işlevi kazandırıldı.
+
 ![alt text](images/image-55.png)
+![alt text](images/image-56.png)
+![alt text](images/image-57.png)
+![alt text](images/image-58.png)
+
+## Closing the Drawer Manually
+Yan menüde açılan meals kategorisine tıklandığında yan menü kapanıyor.
+
+![alt text](images/image-59.png)
+![alt text](images/image-60.png)
+
+## Adding a Filter Item
+`FiltersScreen` adında yeni bir ekran oluşturuldu. Bu ekran sayesinde kullanıcılar kendi tercihlerine göre yemekleri filtreleyebilecek. Şu an sadece gluten-free filtresi eklendi.
+
+![alt text](images/image-61.png)
