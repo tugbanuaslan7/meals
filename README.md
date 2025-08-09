@@ -174,3 +174,42 @@ Yan menüde açılan meals kategorisine tıklandığında yan menü kapanıyor.
 `FiltersScreen` adında yeni bir ekran oluşturuldu. Bu ekran sayesinde kullanıcılar kendi tercihlerine göre yemekleri filtreleyebilecek. Şu an sadece gluten-free filtresi eklendi.
 
 ![alt text](images/image-61.png)
+
+## Replacing Screens (Instead of Pushing)
+MainDrawer içinde bir onSelectCategory fonksiyonu hangi menü seçildiğini yukarıya (Scaffold’a) bildiriyor. "meals" seçildiğinde TabsScreen’e dönüyor.
+
+![alt text](images/image-62.png)
+![alt text](images/image-63.png)   
+![alt text](images/image-64.png)
+![alt text](images/image-65.png)
+![alt text](images/image-66.png)
+
+## Returning Data When Leaving a Screen
+WillPopScope, kullanıcı geri tuşuna bastığında özel bir işlem yapmasını sağlıyor. Normalde geri tuşuna basınca direkt sayfa kapanıyordu ama burada filtre bilgileri bir Map olarak geri gönderiliyor.
+
+![alt text](images/image-67.png)
+
+
+## Reading & Using Returned Data
+TabsScreen’e filtre ekranını Drawer’dan açma ve oradan seçilen filtre ayarlarını (Map<Filter, bool>) geri alma özelliği eklendi.
+Şu an bu veriler sadece print ile konsola yazdırılıyor, ileride yemek listelerini filtrelemek için kullanılabilecek.
+
+![alt text](images/image-68.png)
+
+## Applying Filters
+Filtreleme özelliği eklendi. kInitialFilters ile başlangıç filtre değerleri tanımlandı (glutenFree, lactoseFree, vegetarian, vegan).
+Seçilen filtreler Map<Filter, bool> _selectedFilters içinde tutuluyor.   
+
+Drawer’dan "filters" seçildiğinde FiltersScreen açılıyor ve mevcut filtre değerleri gönderiliyor (currentFilters).
+Kullanıcı geri döndüğünde seçilen filtreler Navigator.pop ile TabsScreen’e geri geliyor ve _selectedFilters güncelleniyor.   
+
+availableMeals listesi, _selectedFilters’e göre dummyMeals üzerinden filtreleniyor.
+Böylece CategoriesScreen’e sadece seçilen filtrelere uygun yemekler gönderiliyor.    
+
+![alt text](images/image-69.png)
+![alt text](images/image-70.png)
+![alt text](images/image-71.png)    
+![alt text](images/image-72.png)
+![alt text](images/image-73.png)
+![alt text](images/image-74.png)
+![alt text](images/image-75.png)
