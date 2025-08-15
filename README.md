@@ -213,3 +213,693 @@ Böylece CategoriesScreen’e sadece seçilen filtrelere uygun yemekler gönderi
 ![alt text](images/image-73.png)
 ![alt text](images/image-74.png)
 ![alt text](images/image-75.png)
+
+## Installing the Solution: Riverpod
+
+```
+flutter pub add flutter_riverpod
+```
+
+Terminalde bu komutu çalıştırarak projeye Riverpod bir extention olarak eklenir.
+
+dummyMeals listesi Riverpod ile Provider içine koyuldu. Bu sayede bu listeye ihtiyaç duyulan her yerden `ref.watch(mealsProvider)` ile erişebilir.  
+
+`TabsScreen` artık `ConsumerStatefulWidget` oldu. Böylece `ref.watch()` kullanarak provider’lardaki veriyi dinleyebiliyorsun. (provider’ın döndürdüğü veri ileride değişirse, bu widget da otomatik olarak yeniden build olur ve yeni veriyi gösterir.)
+
+```dart
+final meals = ref.watch(mealsProvider);
+```
+
+Önceden doğrudan `dummyMeals` kullanılıyordu. Artık Riverpod provider’dan veriyi okuyor.
+
+![alt text](images/image-76.png)   
+![alt text](images/image-77.png)
+![alt text](images/image-78.png)
+
+## Creating a More Complex Provider with StateNotifier
+
+Riverpod + StateNotifier kullanarak “favori yemekler” listesinin yönetimini tek bir yerde toplanaccak.
+
+
+![alt text](images/image-79.png)
+
+
+## Triggering a Notifier Method
+
+`favorites_provider.dart`:   
+Riverpod’un `StateNotifier` sınıfını kullanarak favori yemeklerin listesi tutuluyor.
+
+`toggleMealsFavoriteStatus` fonksiyonu ile yemek listede varsa çıkarır yoksa ekler.
+
+
+```dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meals/models/meal.dart';
+
+class FavoriteMealsNotifier extends StateNotifier<List<Meal>>{
+  FavoriteMealsNotifier() : super([]);
+
+  bool toggleMealsFavoriteStatus(Meal meal) {
+    final mealIsFavorite = state.contains(meal);
+    
+    if (mealIsFavorite){
+      state = state.where((m) => m.id != m.id).toList();
+      return false;
+    } else {
+      state = [...state, meal];
+      return true;
+    }
+    
+    state = [];
+
+  }
+}
+
+final favoriteMealsProvider = 
+    StateNotifierProvider<FavoriteMealsNotifier, List<Meal>>((ref) {
+  return FavoriteMealsNotifier();
+});
+```
+
+
+`tabs.dart`:   
+`ConsumerStatefulWidget` ve `WidgetRef` kullanarak Riverpod entegrasyonu yapıldı.
+
+`ref.watch(mealsProvider)` → Tüm yemekleri Riverpod’dan çekiyor.
+
+`ref.watch(favoriteMealsProvider)` → Favori yemekleri Riverpod’dan çekiyor (eski _favoriteMeals listesi kaldırıldı).
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:meals/models/meal.dart';
+import 'package:meals/screen/categories.dart';
+import 'package:meals/screen/filters.dart';
+import 'package:meals/screen/meals.dart';
+import 'package:meals/widgets/main_drawer.dart';
+import 'package:meals/providers/meals_provider.dart';
+import 'package:meals/providers/favorites_provider.dart';
+
+const kInitialFilters = {
+    Filter.glutenFree: false,
+    Filter.lactoseFree: false,
+    Filter.vegetarian: false,
+    Filter.vegan: false,
+  };
+
+class TabsScreen extends ConsumerStatefulWidget {
+  const TabsScreen({super.key});
+
+  @override
+  ConsumerState<TabsScreen> createState() {
+    return _TabsScreenState();
+  }
+}
+
+class _TabsScreenState extends ConsumerState<TabsScreen> {
+  int _selectedPageIndex = 0;
+  Map<Filter, bool> _selectedFilters = kInitialFilters;
+
+
+  void _selectPage(int index){
+    setState(() {
+      _selectedPageIndex = index;
+    });
+  }
+
+  void _setScreen(String identifier) async{
+      Navigator.of(context).pop();
+      if(identifier == 'filters') {
+        final result = await Navigator.of(context).push<Map<Filter, bool>>(
+          MaterialPageRoute(
+            builder: (ctx) => FiltersScreen(currentFilters: _selectedFilters,),
+          ),
+        );
+
+        setState(() {
+          _selectedFilters = result ?? kInitialFilters;
+        });
+      }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final meals = ref.watch(mealsProvider);
+
+    final availableMeals = meals.where((meal) {
+      if (_selectedFilters[Filter.glutenFree]! && !meal.isGlutenFree) {
+        return false;
+      }
+      if (_selectedFilters[Filter.lactoseFree]! && !meal.isLactoseFree) {
+        return false;
+      }
+      if (_selectedFilters[Filter.vegetarian]! && !meal.isVegetarian) {
+        return false;
+      }
+      if (_selectedFilters[Filter.vegan]! && !meal.isVegan) {
+        return false;
+      }
+      return true;
+    }).toList();
+
+    Widget activePage = CategoriesScreen(
+      availableMeals: availableMeals,
+    );
+    var activePageTitle = 'Categories';
+
+    if (_selectedPageIndex == 1) {
+        final favoriteMeals = ref.watch(favoriteMealsProvider);
+        activePage = MealsScreen(
+          meals: favoriteMeals, 
+        );
+        activePageTitle = 'Your Favorites';
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(activePageTitle),
+      ),
+      drawer: MainDrawer(onSelectCategory: _setScreen),
+      body: activePage,
+      bottomNavigationBar: BottomNavigationBar(
+        onTap: _selectPage,
+        currentIndex: _selectedPageIndex,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.set_meal), 
+            label: 'Categories', 
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.star), 
+            label: 'Favorites', 
+          ),
+        ],
+      ),
+    );
+  }
+
+}
+
+```
+
+`meals.dart`:  
+`onToggleFavorite` parametresi kaldırıldı çünkü artık favori işlemi MealDetailsScreen içinde Riverpod ile yapılıyor.
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:meals/models/meal.dart';
+import 'package:meals/screen/meal_details.dart';
+import 'package:meals/widgets/meal_item.dart';
+
+class MealsScreen extends StatelessWidget {
+  const MealsScreen({
+    super.key,
+    this.title,
+    required this.meals,
+  });
+
+  final String? title;
+  final List<Meal> meals;
+
+  void selectMeal(BuildContext context, Meal meal){
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => MealDetailsScreen(
+          meal: meal,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget content = Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Nothing here',
+            style: Theme.of(context).textTheme.headlineLarge!.copyWith(
+                  color: Theme.of(context).colorScheme.onBackground,
+                ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Try selecting a different category',
+            style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                  color: Theme.of(context).colorScheme.onBackground,
+                ),
+          ),
+        ],
+      ),
+    );
+
+    if (meals.isNotEmpty) {
+      content = ListView.builder(
+        itemCount: meals.length,
+        itemBuilder: (ctx, index) => MealItem(
+          meal: meals[index], 
+          onSelectMeal: selectMeal
+        ),
+      );
+    }
+
+    if (title == null) {
+      return content;
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title!),
+      ),
+      body: content,
+    );
+  }
+}
+
+```
+
+`meal_details.dart`:  
+ConsumerWidget haline getirildi.
+
+ref.read(favoriteMealsProvider.notifier).toggleMealsFavoriteStatus(meal) ile favori durumu değiştiriliyor.
+
+İşlem sonrası SnackBar ile kullanıcıya ekleme/çıkarma bilgisi veriliyor.
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meals/models/meal.dart';
+import 'package:meals/providers/favorites_provider.dart';
+
+class MealDetailsScreen extends ConsumerWidget {
+  const MealDetailsScreen({
+    super.key,
+    required this.meal,
+
+  });
+
+  final Meal meal;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(meal.title),
+        actions: [
+          IconButton(
+            onPressed: () {
+              final wasAdded = ref
+                .read(favoriteMealsProvider.notifier)
+                .toggleMealsFavoriteStatus(meal);
+              ScaffoldMessenger.of(context).clearSnackBars();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    wasAdded ? 'Meal added as a favorite.' : 'Meal removed.'
+                  ),
+                ),
+              );
+            }, 
+            icon: const Icon(Icons.star),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Image.network(
+              meal.imageUrl,
+              height: 300,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Ingredients',
+              style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.bold,
+        
+              ),
+            ),
+            const SizedBox(height: 14),
+            for(final ingredient in meal.ingredients)
+              Text(
+                ingredient,
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  color: Theme.of(context).colorScheme.onBackground,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+              'Steps',
+              style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 14),
+              for(final step in meal.steps)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12, 
+                  vertical: 8,
+                ),
+                child: Text(
+                  step,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    color: Theme.of(context).colorScheme.onBackground,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+}
+
+```
+
+
+
+## Filter Provider
+filters_provider.dart → Filtrelerin merkezi yönetimi için provider tanımlandı.  
+
+ConsumerStatefulWidget veya ConsumerWidget kullanmak, bir widget’ın Riverpod sağlayıcılarını (provider) dinleyebilmesini sağlar.
+Bu sayede:
+
+Widget, ref adında özel bir nesneye erişir.
+
+ref.watch(provider), provider’daki veriyi izler. Provider’da veri değiştiğinde, widget kendiliğinden yeniden çizilir (build edilir).
+
+ref.read(provider.notifier), provider’ın mantığını çalıştırmak, yani veriyi değiştirmek için kullanılır.
+
+Bu yöntemle, veriler provider’dan gelir ve değişiklikler otomatik olarak UI’a yansır.
+Böylece manuel olarak setState() kullanmaya gerek kalmaz, çünkü state yönetimi tamamen provider tarafından yapılır.
+
+![alt text](images/image-80.png)
+![alt text](images/image-81.png)
+
+## Outsourcing State Into The Provider
+`filters.dart`:   
+Önceden filtre değerleri widget içinde `StatefulWidget` ile tutuluyor ve `initState()` ile provider’dan ilk değer alınıyordu. Sayfa kapanırken `WillPopScope` ile tüm filtreler tek seferde provider’a kaydediliyordu.
+
+Şimdş ise filtrelerin tamamı direkt provider’dan `ref.watch()` ile okunuyor ve değişiklikler `onChanged` içinde anında `ref.read(...).setFilter(...)` ile kaydediliyor. Böylece:
+
+Yerel `state` ve `initState()` tamamen kaldırıldı.
+
+`setState()` yerine provider güncellemesi yapılıyor.
+
+`WillPopScope` ile toplu kaydetme yerine anlık güncelleme yapılıyor.
+
+
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+// import 'package:meals/screen/tabs.dart';
+// import 'package:meals/widgets/main_drawer.dart';
+import 'package:meals/providers/filters_provider.dart';
+
+
+class FiltersScreen extends ConsumerWidget {
+  const FiltersScreen({super.key});
+
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeFilters = ref.watch(filtersProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+          title: const Text('Your Filters'),
+      ),
+        body: Column(
+          children: [
+            SwitchListTile(
+              value: activeFilters[Filter.glutenFree]!, 
+              onChanged: (isChecked) {
+                ref
+                    .read(filtersProvider.notifier)
+                    .setFilter(Filter.glutenFree, isChecked);
+              }, 
+              title: Text(
+                'Gluten-free',
+                style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                  color: Theme.of(context).colorScheme.onBackground,
+                ),
+              ),
+              subtitle: Text(
+                'Only include gluten-free meals.',
+                style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                    color: Theme.of(context).colorScheme.onBackground,
+                  ),
+                ),
+                activeColor: Theme.of(context).colorScheme.tertiary,
+                contentPadding: const EdgeInsets.only(left: 34, right: 22),
+            ),
+            SwitchListTile(
+              value: activeFilters[Filter.lactoseFree]!, 
+              onChanged: (isChecked) {
+                ref
+                    .read(filtersProvider.notifier)
+                    .setFilter(Filter.lactoseFree, isChecked);
+              }, 
+              title: Text(
+                'Lactose-free',
+                style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                  color: Theme.of(context).colorScheme.onBackground,
+                ),
+              ),
+              subtitle: Text(
+                'Only include lactose-free meals.',
+                style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                    color: Theme.of(context).colorScheme.onBackground,
+                  ),
+                ),
+                activeColor: Theme.of(context).colorScheme.tertiary,
+                contentPadding: const EdgeInsets.only(left: 34, right: 22),
+            ),
+            SwitchListTile(
+              value: activeFilters[Filter.vegetarian]!, 
+              onChanged: (isChecked) {
+                ref
+                    .read(filtersProvider.notifier)
+                    .setFilter(Filter.vegetarian, isChecked);
+              },  
+              title: Text(
+                'Vegetarian',
+                style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                  color: Theme.of(context).colorScheme.onBackground,
+                ),
+              ),
+              subtitle: Text(
+                'Only include vegetarian meals.',
+                style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                    color: Theme.of(context).colorScheme.onBackground,
+                  ),
+                ),
+                activeColor: Theme.of(context).colorScheme.tertiary,
+                contentPadding: const EdgeInsets.only(left: 34, right: 22),
+            ),
+            SwitchListTile(
+              value: activeFilters[Filter.vegan]!, 
+              onChanged: (isChecked) {
+                ref
+                    .read(filtersProvider.notifier)
+                    .setFilter(Filter.vegan, isChecked);
+              }, 
+              title: Text(
+                'Vegan',
+                style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                  color: Theme.of(context).colorScheme.onBackground,
+                ),
+              ),
+              subtitle: Text(
+                'Only include vegan meals.',
+                style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                    color: Theme.of(context).colorScheme.onBackground,
+                  ),
+                ),
+                activeColor: Theme.of(context).colorScheme.tertiary,
+                contentPadding: const EdgeInsets.only(left: 34, right: 22),
+            ),
+          ],
+      ),
+    );
+  }
+}
+```
+
+## Connecting Multiple Providers With Each Other (Dependent Providers)
+
+`filter_provider.dart`:  
+filteredMealsProvider tanımlandı.
+
+```dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meals/providers/meals_provider.dart';
+
+enum Filter { 
+  glutenFree,
+  lactoseFree,
+  vegetarian,
+  vegan,
+}
+
+class FiltersNotifier extends StateNotifier<Map<Filter, bool>> {
+  FiltersNotifier() : super({
+    Filter.glutenFree: false,
+    Filter.lactoseFree: false,
+    Filter.vegetarian: false,
+    Filter.vegan: false
+
+  });
+
+  void setFilters(Map<Filter, bool> chosenFilter) {
+    state = chosenFilter;
+  }
+
+  void setFilter(Filter filter, bool isActive) {
+    state[filter] = isActive; // not allowed! => mutating state
+    state = {
+      ...state, 
+      filter: isActive,
+    };
+  }
+}
+
+final filtersProvider = StateNotifierProvider<FiltersNotifier, Map<Filter, bool>>(
+  (ref) => FiltersNotifier(),
+);
+
+final filteredMealsProvider = Provider((ref) {
+  final meals = ref.watch(mealsProvider);
+  final activeFilters = ref.watch(filtersProvider);
+
+  return meals.where((meal) {
+      if (activeFilters[Filter.glutenFree]! && !meal.isGlutenFree) {
+        return false;
+      }
+      if (activeFilters[Filter.lactoseFree]! && !meal.isLactoseFree) {
+        return false;
+      }
+      if (activeFilters[Filter.vegetarian]! && !meal.isVegetarian) {
+        return false;
+      }
+      if (activeFilters[Filter.vegan]! && !meal.isVegan) {
+        return false;
+      }
+      return true;
+    }).toList();
+});
+```
+
+`tabs.dart`:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:meals/screen/categories.dart';
+import 'package:meals/screen/filters.dart';
+import 'package:meals/screen/meals.dart';
+import 'package:meals/widgets/main_drawer.dart';
+import 'package:meals/providers/favorites_provider.dart';
+import 'package:meals/providers/filters_provider.dart';
+
+const kInitialFilters = {
+    Filter.glutenFree: false,
+    Filter.lactoseFree: false,
+    Filter.vegetarian: false,
+    Filter.vegan: false,
+  };
+
+class TabsScreen extends ConsumerStatefulWidget {
+  const TabsScreen({super.key});
+
+  @override
+  ConsumerState<TabsScreen> createState() {
+    return _TabsScreenState();
+  }
+}
+
+class _TabsScreenState extends ConsumerState<TabsScreen> {
+  int _selectedPageIndex = 0;
+
+
+  void _selectPage(int index){
+    setState(() {
+      _selectedPageIndex = index;
+    });
+  }
+
+  void _setScreen(String identifier) async{
+      Navigator.of(context).pop();
+      if(identifier == 'filters') {
+        await Navigator.of(context).push<Map<Filter, bool>>(
+          MaterialPageRoute(
+            builder: (ctx) => const FiltersScreen(),
+          ),
+        );
+      }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final availableMeals = ref.watch(filteredMealsProvider);
+
+    Widget activePage = CategoriesScreen(
+      availableMeals: availableMeals,
+    );
+    var activePageTitle = 'Categories';
+
+    if (_selectedPageIndex == 1) {
+        final favoriteMeals = ref.watch(favoriteMealsProvider);
+        activePage = MealsScreen(
+          meals: favoriteMeals, 
+        );
+        activePageTitle = 'Your Favorites';
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(activePageTitle),
+      ),
+      drawer: MainDrawer(onSelectCategory: _setScreen),
+      body: activePage,
+      bottomNavigationBar: BottomNavigationBar(
+        onTap: _selectPage,
+        currentIndex: _selectedPageIndex,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.set_meal), 
+            label: 'Categories', 
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.star), 
+            label: 'Favorites', 
+          ),
+        ],
+      ),
+    );
+  }
+
+}
+```
+
+
+## Swapping The "Favorite Button" Based On Provider State
+
+Yemeğin favorilerde ekli olup olmama durumuna göre star ikonu değişiyor.
+
+![alt text](images/image-82.png)     
+![alt text](images/image-83.png)
+![alt text](images/image-84.png)
+![alt text](images/image-85.png)
+![alt text](images/image-86.png)
+![alt text](images/image-87.png)
