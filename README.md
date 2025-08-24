@@ -1,5 +1,17 @@
 # meals
 
+Bu projeyi Flutter ile geliştirirken kullanıcıların yemek tariflerini rahatça keşfedebilmelerini hedefledin. Uygulamada:
+
+- Farklı yemek kategorileri arasında gezinebiliyor,
+
+- Seçilen yemeğin malzemelerine ve adım adım tarifine ulaşabiliyor,
+
+- Kendi zevklerine göre favori yemeklerini kaydedebiliyor,
+
+- Ayrıca filtreleme özelliği sayesinde (ör. glutensiz, vegan vb.) yalnızca istedikleri yemekleri görebiliyorlar.
+
+
+
 ## Using a GridView
  Ekranın üst kısmında bir başlık (AppBar) bulunur. Gövde kısmında ise 2 sütunlu bir grid yer alır.  
 ![alt text](images/image-1.png) 
@@ -903,3 +915,44 @@ Yemeğin favorilerde ekli olup olmama durumuna göre star ikonu değişiyor.
 ![alt text](images/image-85.png)
 ![alt text](images/image-86.png)
 ![alt text](images/image-87.png)
+
+
+## Explicit Animations: Adding an Animation Controller
+
+Ekranda animasyonlar yapılabilmesi için `AnimationController` tanımlandı. Şu an aktif olarak kullanılmıyor ama ileride kategori grid öğelerini animasyonlu göstermek için hazır.
+
+![alt text](images/image-88.png)
+
+
+## Explicit Animations: Playing the Animation with AnimatedBuilder
+AnimationController ile animasyon yönetiliyor.
+
+AnimatedBuilder → animasyon ilerledikçe GridView’in padding’i değiştiriliyor.
+
+Görsel efekt → GridView, ekran açıldığında yumuşak bir slide-up animasyonu ile geliyor.
+
+
+![alt text](images/image-89.png)
+
+
+## Finetuning Excilipt Animations
+
+Kategoriler ekranı açıldığında GridView’in animasyonla görünmesi sağlandı. Daha önce `Padding` ile yukarıdan kaydırma yapılırken şimdi `SlideTransition` kullanılıyor. Böylece kategoriler ekrana alttan kayarak ve daha akıcı bir şekilde geliyor.
+
+![alt text](images/image-90.png)
+
+## Getting Started with Implicit Animations
+
+İkon değiştiğinde (yani yemek favoriye eklenince veya çıkarılınca), animasyonlu bir geçiş oluyor.
+
+transitionBuilder içinde RotationTransition kullanıldığı için yıldız ikonu dönerek değişiyor.
+
+![alt text](images/image-91.png)
+
+
+## Adding Multi-Screen Transitions
+
+Hero(tag: meal.id, child: Image.network(...)) → Listeden detaya geçerken resim yumuşak animasyonla büyüyor.
+
+![alt text](images/image-92.png)
+![alt text](images/image-93.png)
