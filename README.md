@@ -1,4 +1,4 @@
-# meals
+# MEALS
 
 Bu projeyi Flutter ile geliştirirken kullanıcıların yemek tariflerini rahatça keşfedebilmelerini hedefledin. Uygulamada:
 
@@ -10,6 +10,93 @@ Bu projeyi Flutter ile geliştirirken kullanıcıların yemek tariflerini rahat�
 
 - Ayrıca filtreleme özelliği sayesinde (ör. glutensiz, vegan vb.) yalnızca istedikleri yemekleri görebiliyorlar.
 
+![alt text](images/image-94.png)
+![alt text](images/image-95.png)
+![alt text](images/image-95.png)
+![alt text](images/image-96.png)
+![alt text](images/image-97.png)
+![alt text](images/image-98.png)
+![alt text](images/image-99.png)
+![alt text](images/image-100.png)
+![alt text](images/image-101.png)
+
+## Dosya Yapısı
+
+```css
+lib/
+├─ data/
+│  └─ dummy_data.dart
+├─ models/
+│  ├─ category.dart
+│  └─ meal.dart
+├─ providers/
+│  ├─ favorites_provider.dart
+│  ├─ filters_provider.dart
+│  └─ meals_provider.dart
+├─ screen/
+│  ├─ categories.dart
+│  ├─ filters.dart
+│  ├─ meal_details.dart
+│  ├─ meals.dart
+│  └─ tabs.dart
+├─ widgets/
+│  ├─ category_grid_item.dart
+│  ├─ main_drawer.dart
+│  ├─ meal_item_trait.dart
+│  └─ meal_item.dart
+└─ main.dart
+
+```
+
+### 📂 lib/data
+
+- **dummy_data.dart**  → Uygulamanın test/örnek verileri burada tutuluyor. (Kategori listesi, yemek listesi vb.)
+
+### 📂 lib/models
+
+- **category.dart** → Kategori model sınıfı. (id, title, renk vs. tutar)
+
+- **meal.dart** → Yemek model sınıfı. (id, title, resim, süre, zorluk, fiyat, malzemeler, adımlar vs.)
+
+
+### 📂 lib/providers
+
+Riverpod kullanılarak state yönetimi yapıldı.
+
+- **favorites_provider.dart** → Favorilere eklenen yemekleri yönetiyor.
+
+- **filters_provider.dart** → Kullanıcının seçtiği filtreleri (örn: vejetaryen, vegan, gluten free) tutuyor.
+
+- **meals_provider.dart** → Genel yemek listesini veya filtrelenmiş yemekleri sağlıyor.
+
+
+### 📂 lib/screen
+
+- **categories.dart** → Kategorilerin listelendiği ana ekran (Grid görünüm).
+
+- **filters.dart** → Kullanıcıya filtre seçenekleri sunan ekran.
+
+- **meal_details.dart** → Seçilen yemeğin detay ekranı (resim, malzemeler, adımlar, favori ekleme).
+
+- **meals.dart** → Belirli bir kategoriye ait yemekleri listeleyen ekran.
+
+- **tabs.dart** → Alt menü ekranı.
+
+### 📂 lib/widgets
+
+- **category_grid_item.dart** → Kategori kutucuğu (grid item).
+
+- **main_drawer.dart** → Yan menü (Drawer).
+
+- **meal_item_trait.dart** → Yemek özellikleri (süre, zorluk, fiyat gibi küçük bilgi alanları).
+
+- **meal_item.dart** → Yemek kartı (resim + bilgiler). Listede her yemek için gösteriliyor.
+
+### 📄 main.dart
+
+Uygulamanın giriş noktası.
+
+---------------------------------
 
 
 ## Using a GridView
