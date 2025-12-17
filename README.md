@@ -1,6 +1,6 @@
 # MEALS
 
-Bu projeyi Flutter ile geliştirirken kullanıcıların yemek tariflerini rahatça keşfedebilmelerini hedefledin. Uygulamada:
+Bu projeyi Flutter ile geliştirirken kullanıcıların yemek tariflerini rahatça keşfedebilmelerini hedefledim. Uygulamada:
 
 - Farklı yemek kategorileri arasında gezinebiliyor,
 
